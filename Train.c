@@ -1,0 +1,90 @@
+#include"Nwork.h"
+main(){
+	//ÑµÁ· 
+	read_weight();
+	printf("start train\n");
+	account=0;
+	if((fp=fopen(FP_TRAIN,"r"))==NULL){
+	 	printf("cannot test");
+	 	exit(0);
+	 }
+	c=fgetc(fp);
+	printf("please wait");
+	while(c!=EOF){
+		object=(int)(0-'0'+c);
+		c=fgetc(fp); 
+		i=0; 
+		while(c!='\n'){
+			temp=0;
+			c=fgetc(fp);
+			while(c!=','&&c!='\n'){
+				temp=temp*10+(int)(0-'0'+c);
+				c=fgetc(fp);
+			}
+			in.ob[i]=range((double)temp);
+			i++;
+		}
+		//(ÔËÐÐ)
+		if(LAY==1){
+			weight_cul(HIDDEN,IN,in.weight,in.ob,hidout.ob);
+			weight_cul(OUT,HIDDEN,hidout.weight,hidout.ob,out.ob);
+		}
+		else if(LAY>=2){
+			weight_cul(HIDDEN,IN,in.weight,in.ob,hidden[0].ob);
+			for(i=0;i<LAY-2;i++)weight_cul(HIDDEN,HIDDEN,hidden[i].weight,hidden[i].ob,hidden[i+1].ob);
+			weight_cul(HIDDEN,HIDDEN,hidden[LAY-2].weight,hidden[LAY-2].ob,hidout.ob);
+			weight_cul(OUT,HIDDEN,hidout.weight,hidout.ob,out.ob);
+		} 
+		//(·µ´í) 
+		for(i=0;i<OUT;i++){
+			if(i==object)out.error[i]=0.99-out.ob[i];
+			else out.error[i]=0.01-out.ob[i];
+		}
+		error_cul(OUT,HIDDEN,hidout.weight,out.error,hidout.error);
+		if(LAY==1){
+			for(i=0;i<HIDDEN;i++){
+				for(j=0;j<IN;j++){
+					in.weight[i][j]+=Learning_rate*hidout.error[i]*hidout.ob[i]*(1-hidout.ob[i])*in.ob[j];
+				}	
+			}
+			for(i=0;i<OUT;i++){
+				for(j=0;j<HIDDEN;j++){
+					hidout.weight[i][j]+=Learning_rate*out.error[i]*out.ob[i]*(1-out.ob[i])*hidout.ob[j];
+				}
+			}
+		}
+		else{
+			error_hid(HIDDEN,HIDDEN,hidden[LAY-2].weight,hidout.error,hidden[LAY-2].error);
+			for(i=LAY-2;i>0;i--)error_hid(HIDDEN,HIDDEN,hidden[i-1].weight,hidden[i].error,hidden[i-1].error);
+			for(i=0;i<HIDDEN;i++){
+				for(j=0;j<IN;j++){
+					in.weight[i][j]+=Learning_rate*hidden[0].error[i]*hidden[0].ob[i]*(1-hidden[0].ob[i])*in.ob[j];
+				}	
+			}
+			for(u=0;u<LAY-2;u++){
+				for(i=0;i<HIDDEN;i++){
+					for(j=0;j<HIDDEN;j++){
+						hidden[u].weight[i][j]+=Learning_rate*hidden[u+1].error[i]*hidden[u+1].ob[i]*(1-hidden[u+1].ob[i])*hidden[u].ob[j];
+					}
+				}
+			}
+			for(i=0;i<HIDDEN;i++){
+				for(j=0;j<HIDDEN;j++){
+					hidden[LAY-2].weight[i][j]+=Learning_rate*hidout.error[i]*hidout.ob[i]*(1-hidout.ob[i])*hidden[LAY-1].ob[j];
+				}
+			}
+			for(i=0;i<OUT;i++){
+				for(j=0;j<HIDDEN;j++){
+					hidout.weight[i][j]+=Learning_rate*out.error[i]*out.ob[i]*(1-out.ob[i])*hidout.ob[j];
+				}
+			}
+		}
+		c=fgetc(fp);
+		account++;
+		if(account==SPEED){
+			printf("/");
+			account=0;
+		}
+	}
+	write_weight();
+}
